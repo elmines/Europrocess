@@ -37,6 +37,7 @@ def make_links(entries, source_dir, dest_dir):
      for entry in entries:
         orig_entry = os.path.join(source_dir, entry)
         link_entry = os.path.join(dest_dir, entry)
+        if os.path.exists(link_entry): os.remove(link_entry)
         os.symlink(orig_entry, link_entry)
 
 def main(langs, source_root, train_root, test_root=None):
