@@ -36,25 +36,46 @@ def date_tuple(entry):
     nums[0] += 1900 if nums[0] > 90 else 2000
     return tuple( nums )
 
-def get_input():
-    return input("Enter a Europarl filename: ")
+def split_sentences(raw, lang):
+    """
+    unsplit - A path to a Europarl XML file with unsplit sentences
+    lang    - The 2-character language code of the text's language
+    Returns a string of text (with newlines) of the split sentences
+    """
+    #print("Called split_sentences")
+    with open(raw, "r", encoding="utf-8") as r:
+        splitting = subprocess.Popen(["./split-sentences.perl", "-l", lang], stdin = r, stdout=subprocess.PIPE, universal_newlines=True)
+        split = splitting.communicate()[0] 
+        status = splitting.wait()
+        if status:
+           raise RuntimeError("Sentence splitting script failed with error code %d" % status)
+        return str(split)
 
-def main(langs, source_root):
+def de_xml(xml_text):
+   """
+   xml_text - An array of byte strings with XML (and blank strings) to be cleaned"
+   """
+   cleaned_text = []
+   for line in xml_text.splitlines():
+       if line and not(line.startswith("<")): cleaned_text.append(line)
+   return cleaned_text       
 
-    #if len(langs) < 2:
-        #raise ValueError("Must specifiy at least two languages")
-
-    initial_dir = os.path.join(source_root, langs[0])
-    entries = os.listdir(initial_dir)
+def main(langs, source_root, cleaned=working_directory()):
+    lang = langs[0]
+    source_dir = os.path.join(source_root, lang)
+    entries = os.listdir(source_dir)
     entries.sort(key = date_tuple)
+
+
+    cleaned_text = []
     for entry in entries:
-        print(entry)
-    #query = get_input()
-    #while query:
-        #print( date_tuple(query) )
-        #query = get_input()
+        split_text = split_sentences( os.path.join(source_dir, entry), "en")
+        cleaned_text += de_xml(split_text)
+
+    with open("output.txt", "w", encoding="utf-8") as w:
+        w.write( "\n".join(cleaned_text) )
 
 if __name__ == "__main__":
     parser = create_parser()
     args = parser.parse_args()
-    main(args.langs, args.source)
+    main(args.langs, args.source, args.cleaned)
