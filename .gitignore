@@ -1,0 +1,6 @@
+*.txt
+train/
+test/
+cleaned/
+nonbreaking_prefixes/
+*.perl
