@@ -60,24 +60,36 @@ def de_xml(xml_text):
        if line and not(line.startswith("<")): cleaned_text.append(line)
    return cleaned_text       
 
+def align(xml_texts):
+    indices = [0 for i in range(len(xml_texts))]
+    print(indices)
 
 def main(langs, source_root, cleaned_root=working_directory(), verbose=False):
+
     if not os.path.exists(cleaned_root): os.makedirs(cleaned_root)
     entries = os.listdir(os.path.join(source_root, langs[0])) #The entries need only be computed once
     entries.sort(key = date_tuple)
 
+    split_corpora = []
     for lang in langs:
         source_dir = os.path.join(source_root, lang)
 
-        cleaned_text = []
+        split_corpus = []
         for entry in entries:
-            split_text = split_sentences( os.path.join(source_dir, entry), "en")
-            cleaned_text += de_xml(split_text)
+            split_corpus += split_sentences( os.path.join(source_dir, entry), "en").splitlines()
 
-        cleaned_corpus = os.path.join(cleaned_root, lang + ".txt")
-        with open(cleaned_corpus, "w", encoding="utf-8") as w:
-            w.write( "\n".join(cleaned_text) )
-        if verbose: print("Wrote cleaned corpus %s" % cleaned_corpus, file=sys.stderr)
+        split_corpora.append( split_corpus )
+    
+
+    align(split_corpora)
+
+
+    """
+    cleaned_corpus = os.path.join(cleaned_root, lang + ".txt")
+    with open(cleaned_corpus, "w", encoding="utf-8") as w:
+        w.write( "\n".join(cleaned_text) )
+    if verbose: print("Wrote cleaned corpus %s" % cleaned_corpus, file=sys.stderr)
+    """ 
 
 
 if __name__ == "__main__":
