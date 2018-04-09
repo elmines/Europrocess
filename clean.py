@@ -64,6 +64,45 @@ def align(xml_texts):
     indices = [0 for i in range(len(xml_texts))]
     print(indices)
 
+
+def content_remaining(entries, indices):
+    for i in range(len(entries)):
+       if indices[i] >= len(entries[i]): return False
+    return True
+
+def sentence_align(entries):
+    
+    indices = [0 for i in range(len(entries))] #One index to scroll through each language's entry
+
+    aligned_entries = [ [] for i in range(len(entries)) ]
+
+    next_xml = [ "" for i range(len(entries)) ]
+
+    while content_remaining(entries, indices):
+
+        
+    
+
+def alt_main(langs, source_root, cleaned_root=working_directory, verbose=False):
+    if not os.path.exists(cleaned_root): os.makedirs(cleaned_root)
+    entries = os.listdir(os.path.join(source_root, langs[0])) #The entries need only be computed once
+    entries.sort(key = date_tuple)
+
+    #List of dimensions ( len(entries), len(langs) )
+    #Each element of split_corpora is another list, whose entries are string representations for the entry in each lang
+    split_corpora = []
+    for entry in entries:
+        parallel_entries = [split_sentences(os.path.join(source_root, lang, entry), "en") for lang in langs]
+        split_corpora.append( parallel_entries )
+
+    #i = 1
+    #for entry in split_corpora[0]:
+       #print("ENTRY %d" % i)
+       #print(entry)
+       #i += 1
+
+    first_doc = split_corpora[0]
+
 def main(langs, source_root, cleaned_root=working_directory(), verbose=False):
 
     if not os.path.exists(cleaned_root): os.makedirs(cleaned_root)
@@ -95,4 +134,4 @@ def main(langs, source_root, cleaned_root=working_directory(), verbose=False):
 if __name__ == "__main__":
     parser = create_parser()
     args = parser.parse_args()
-    main(args.langs, args.source, args.cleaned, verbose=args.verbose)
+    alt_main(args.langs, args.source, args.cleaned, verbose=args.verbose)
