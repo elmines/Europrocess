@@ -2,8 +2,9 @@ import sys
 import os
 import argparse
 import subprocess
+import re
 
-DEBUG = False
+DEBUG = True
 
 #Functions to help with argument parsing
 def working_directory():
@@ -27,6 +28,8 @@ def create_parser():
     parser.add_argument("--verbose", "-v", action="store_true", help="Display progress messages")
 
     return parser
+
+
 
 def date_tuple(entry):
     start_index = entry.index("ep-") + len("ep-")
@@ -60,48 +63,113 @@ def de_xml(xml_text):
        if line and not(line.startswith("<")): cleaned_text.append(line)
    return cleaned_text       
 
-def align(xml_texts):
-    indices = [0 for i in range(len(xml_texts))]
-    print(indices)
 
+#Global regular expression for extracting the ID attribute from an XML tag
+ID_PATTERN = re.compile(r"ID=(\d+)")
+def tag_id(tag):
+    return int( ID_PATTERN.search(tag).group(1) )
 
-def content_remaining(entries, indices):
-    for i in range(len(entries)):
-       if indices[i] >= len(entries[i]): return False
+def content_remaining(entry_set, indices):
+    for i in range(len(entry_set)):
+       if indices[i] >= len(entry_set[i]): return False
     return True
 
-def sentence_align(entries):
+def chapter_tag(line):
+    return line.startswith("<CHAPTER")
+
+def common_chapter(entry_set, indices):
+    last_id = tag_id( entry_set[0][ indices[0] ] )
+    for i in range(1, len(entry_set)):
+        current_id = tag_id( entry_set[i][ indices[i] ] )
+        if current_id != last_id: return False
+    return True
+
+def next_chapter(lines, i):
+    i += 1
+    while (i < len(lines)) and not(chapter_tag(lines[i])): i += 1
+    return i
+
+def next_common_chapter(entry_set, indices):
+    """
+    indices -- Original indices
+    """
+    indices = [i + 1 for i in indices] #Increment, because we're looking for the *next* chapter
+
+    i = 0
+    while content_remaining(entry_set, indices) and (i < len(entry_set)):
+        if not chapter_tag( entry_set[i][ indices[i] ] ):
+            indices[i] = next_chapter( entry_set[i], indices[i] )
+        i += 1
+
+    if DEBUG and not content_remaining(entry_set, indices):
+        print("next_common_chapter: no content remaining")
+        return indices 
+
+    chapter_ids = [ tag_id( entry_set[i][ indices[i] ] ) for i in range(len(entry_set)) ]
+    max_id = max(chapter_ids)
+
+    while content_remaining(entry_set, indices) and not( common_chapter(entry_set, indices) ):
+        i = 0
+        while i < len(entry_set) and not(common_chapter(entry_set, indices)):
+            if chapter_ids[i] < max_id:
+                indices[i] = next_chapter(entry_set[i], indices[i])
+                chapter_ids[i] = tag_id( entry_set[i][ indices[i] ] )
+                if chapter_ids[i] > max_id: max_id = chapter_ids[i]
+            i += 1
+
+    if DEBUG and not content_remaining(entry_set, indices):
+        print("next_common_chapter: no content remaining")
+
+    return indices
+
+def chapter_align(entry_set):
+    """
+    entry_set - A list of strings, each of which is the entry for a given language
+    """
+
     
-    indices = [0 for i in range(len(entries))] #One index to scroll through each language's entry
+    indices = [0 for i in range(len(entry_set))] #One index to scroll through each language's entry
 
-    aligned_entries = [ [] for i in range(len(entries)) ]
+    aligned_content = [ [] for i in range(len(entry_set)) ]
 
-    next_xml = [ "" for i range(len(entries)) ]
+    if not common_chapter(entry_set, indices): indices = next_common_chapter(entry_set, indices)
+    while content_remaining(entry_set, indices):
+        for i in range(len(entry_set)):
+            entry = entry_set[i]
+            j = indices[i] + 1
+            while j < len(entry) and not(chapter_tag(entry[j])):
+                aligned_content[i].append( entry[j] )
+                j += 1
+            indices[i] = j
+        if content_remaining(entry_set, indices) and not common_chapter(entry_set, indices):
+            indices = next_common_chapter(entry_set, indices)
 
-    while content_remaining(entries, indices):
-
-        
+    print(indices)
+    return aligned_content
     
 
 def alt_main(langs, source_root, cleaned_root=working_directory, verbose=False):
     if not os.path.exists(cleaned_root): os.makedirs(cleaned_root)
-    entries = os.listdir(os.path.join(source_root, langs[0])) #The entries need only be computed once
+    entries = os.listdir(os.path.join(source_root, langs[0])) #The file path basenames need only be computed once
     entries.sort(key = date_tuple)
 
-    #List of dimensions ( len(entries), len(langs) )
-    #Each element of split_corpora is another list, whose entries are string representations for the entry in each lang
+    #List of dimensions ( len(entries), len(langs), varies )
+    #Each element of split_corpora is another list, each of whose entries is, again, a list of strings
     split_corpora = []
     for entry in entries:
-        parallel_entries = [split_sentences(os.path.join(source_root, lang, entry), "en") for lang in langs]
+        parallel_entries = [split_sentences(os.path.join(source_root, lang, entry), "en").splitlines() for lang in langs]
         split_corpora.append( parallel_entries )
 
-    #i = 1
-    #for entry in split_corpora[0]:
-       #print("ENTRY %d" % i)
-       #print(entry)
-       #i += 1
-
     first_doc = split_corpora[0]
+    #print(first_doc)
+
+    first_chapter_aligned = chapter_align(first_doc)
+    #lengths = [ len(entry) for entry in first_chapter_aligned ]
+    #print(lengths)
+    i = 1
+    for entry in first_chapter_aligned:
+        print("LANG %d" % i)
+        for line in entry: print(line)
 
 def main(langs, source_root, cleaned_root=working_directory(), verbose=False):
 
