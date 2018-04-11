@@ -1,4 +1,9 @@
 *.txt
+txt/
 train/
 test/
-cleaned/
+aligned/
+unaligned/
+clean/
+train_clean/
+test_clean/

@@ -9,11 +9,12 @@ binmode(STDOUT, ":utf8");
 binmode(STDERR, ":utf8");
 
 chdir($Bin);
-my $dir = "txt";
-my $outdir = "aligned";
+
+my ($l1, $l2, $dir, $outdir) = @ARGV;
 my $preprocessor = "$Bin/tools/split-sentences.perl -q";
 
-my ($l1,$l2) = @ARGV;
+#print "$l1 $l2 $dir $outdir\n";
+
 die unless -e "$dir/$l1";
 die unless -e "$dir/$l2";
 
