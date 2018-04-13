@@ -1,8 +1,8 @@
 #!/bin/bash
 
 SOURCE=txt
-#LANGS=(da de en es fi fr it nl pt sv)
-LANGS=(en es fi fr it nl pt sv)
+LANGS=(da de en es fi fr it nl pt sv)
+#LANGS=(en es fi fr it nl pt sv)
 #bg  cs  da  de  el  en  es  et  fi  fr  hu  it  lt  lv  nl  pl  pt  ro  sk  sl  sv
 
 #echo ${LANGS[@]}
